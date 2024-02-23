@@ -108,7 +108,6 @@ class BeaconReferenceApplication: Application() {
         regionViewModel.regionState.observeForever( centralMonitoringObserver)
         // observer will be called each time a new list of beacons is ranged (typically ~1 second in the foreground)
         regionViewModel.rangedBeacons.observeForever( centralRangingObserver)
-
     }
 
     fun setupForegroundService() {
@@ -142,14 +141,32 @@ class BeaconReferenceApplication: Application() {
         }
     }
 
+    val MAX_BEACONS = 20
+    val EXPIRATION_TIME = 15 * 60 * 1000 // 15 minutes in milliseconds
+
+    val beaconNotificationTimestamps = object : LinkedHashMap<Beacon, Long>(MAX_BEACONS, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Beacon, Long>?): Boolean {
+            return size > MAX_BEACONS
+        }
+    }
 
     val centralRangingObserver = Observer<Collection<Beacon>> { beacons ->
-        val rangeAgeMillis = System.currentTimeMillis() - (beacons.firstOrNull()?.lastCycleDetectionTimestamp ?: 0)
+        val currentTimeMillis = System.currentTimeMillis()
+        val rangeAgeMillis = currentTimeMillis - (beacons.firstOrNull()?.lastCycleDetectionTimestamp ?: 0)
         if (rangeAgeMillis < 10000) {
             Log.d(MainActivity.TAG, "Ranged: ${beacons.count()} beacons")
             for (beacon: Beacon in beacons) {
-                Log.d(TAG, "$beacon about ${beacon.distance} meters away")
-                sendEventNotification(beacon)
+                val lastNotificationTime = beaconNotificationTimestamps[beacon] ?: 0
+                val timeSinceLastNotification = currentTimeMillis - lastNotificationTime
+
+                Log.d(MainActivity.TAG, "$beacon about ${beacon.distance} meters away")
+                if (timeSinceLastNotification >= EXPIRATION_TIME) {
+                    sendEventNotification(beacon)
+                    // Update the last notification timestamp for this beacon
+                    beaconNotificationTimestamps[beacon] = currentTimeMillis
+                }
+                else
+                    Log.d(TAG, "Not sending notification for already discovered beacon")
             }
         }
         else {
@@ -169,7 +186,7 @@ class BeaconReferenceApplication: Application() {
                 return@execute
             }
             coroutineScope.launch {
-                eventNotifier.sendEventNotification(adInfo,beacon)
+                eventNotifier.sendEventNotification(adInfo, beacon)
             }
         }
     }
