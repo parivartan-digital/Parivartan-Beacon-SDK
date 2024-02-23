@@ -3,23 +3,29 @@ package org.altbeacon.beaconreference
 import android.app.*
 import android.content.Context
 import android.content.Intent
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.lifecycle.Observer
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import org.altbeacon.beacon.*
 import org.altbeacon.bluetooth.BluetoothMedic
+import java.util.concurrent.Executors
 
 class BeaconReferenceApplication: Application() {
     // the region definition is a wildcard that matches all beacons regardless of identifiers.
     // if you only want to detect beacons with a specific UUID, change the id1 paremeter to
     // a UUID like Identifier.parse("2F234454-CF6D-4A0F-ADF2-F4911BA9FFA6")
-    var region = Region("all-beacons", null, null, null)
+    var region = Region("advertalyst-beacons", Identifier.parse("2F234454-CF6D-4A0F-ADF2-F4911BA9FFA5"), null, null)
 
     override fun onCreate() {
         super.onCreate()
 
         val beaconManager = BeaconManager.getInstanceForApplication(this)
-        BeaconManager.setDebug(true)
+        BeaconManager.setDebug(false)
 
         // By default the AndroidBeaconLibrary will only find AltBeacons.  If you wish to make it
         // find a different type of beacon, you must specify the byte layout for that beacon's
@@ -136,16 +142,35 @@ class BeaconReferenceApplication: Application() {
         }
     }
 
+
     val centralRangingObserver = Observer<Collection<Beacon>> { beacons ->
         val rangeAgeMillis = System.currentTimeMillis() - (beacons.firstOrNull()?.lastCycleDetectionTimestamp ?: 0)
         if (rangeAgeMillis < 10000) {
             Log.d(MainActivity.TAG, "Ranged: ${beacons.count()} beacons")
             for (beacon: Beacon in beacons) {
                 Log.d(TAG, "$beacon about ${beacon.distance} meters away")
+                sendEventNotification(beacon)
             }
         }
         else {
             Log.d(MainActivity.TAG, "Ignoring stale ranged beacons from $rangeAgeMillis millis ago")
+        }
+    }
+
+    private fun sendEventNotification(beacon: Beacon) {
+        val executor = Executors.newSingleThreadExecutor()
+        val handler = Handler(Looper.getMainLooper())
+        val coroutineScope = CoroutineScope(Dispatchers.IO)
+        executor.execute {
+            val eventNotifier = EventNotifier()
+            val adInfo = eventNotifier.getAdId(this)
+            if(adInfo == null) {
+                Log.i(MainActivity.TAG, "Could not extract advertising ID. Not proceeding")
+                return@execute
+            }
+            coroutineScope.launch {
+                eventNotifier.sendEventNotification(adInfo,beacon)
+            }
         }
     }
 

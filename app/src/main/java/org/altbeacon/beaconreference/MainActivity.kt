@@ -14,7 +14,12 @@ import org.altbeacon.beacon.Beacon
 import org.altbeacon.beacon.BeaconManager
 import org.altbeacon.beacon.MonitorNotifier
 import android.content.Intent
+import android.os.Handler
+import android.os.Looper
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import org.altbeacon.beacon.permissions.BeaconScanPermissionsActivity
+import java.util.concurrent.Executors
 
 class MainActivity : AppCompatActivity() {
     lateinit var beaconListView: ListView
@@ -41,6 +46,21 @@ class MainActivity : AppCompatActivity() {
         beaconCountTextView = findViewById<TextView>(R.id.beaconCount)
         beaconCountTextView.text = "No beacons detected"
         beaconListView.adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, arrayOf("--"))
+
+//        printAdId()
+    }
+
+    fun printAdId() {
+        val executor = Executors.newSingleThreadExecutor()
+        val handler = Handler(Looper.getMainLooper())
+        executor.execute {
+            val eventNotifier = EventNotifier()
+            val adInfo = eventNotifier.getAdId(this)
+            if(adInfo == null) {
+                Log.i(TAG, "Could not extract advertising ID. Not proceeding")
+                return@execute
+            }
+        }
     }
 
     override fun onPause() {

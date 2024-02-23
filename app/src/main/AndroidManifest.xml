@@ -9,6 +9,8 @@
     <!-- Below is only needed if you want to read the device name or establish a bluetooth connection
     -->
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT"/>
+    <!--  Declare this permission to access Advertising ID in Android 13+-->
+    <uses-permission android:name="com.google.android.gms.permission.AD_ID"/>
 
     <application
         android:name="BeaconReferenceApplication"
@@ -26,6 +28,11 @@
         </activity>
         <activity android:name="org.altbeacon.beacon.permissions.BeaconScanPermissionsActivity"
             android:exported="false"/>
+
+        <!-- Sample AdMob app ID: ca-app-pub-3940256099942544~3347511713 -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-3940256099942544~3347511713"/>
     </application>
 
 </manifest>
