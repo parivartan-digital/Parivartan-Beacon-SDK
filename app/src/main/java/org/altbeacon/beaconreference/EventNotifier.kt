@@ -3,22 +3,20 @@ package org.altbeacon.beaconreference
 import android.content.Context;
 import com.google.android.gms.ads.identifier.AdvertisingIdClient
 import com.google.android.gms.ads.identifier.AdvertisingIdClient.Info;
-import com.google.android.gms.common.GooglePlayServicesNotAvailableException;
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
-import okhttp3.OkHttpClient
 import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.POST
 import java.lang.Exception
-import java.sql.Timestamp
 import android.util.Log
+import okhttp3.Interceptor
+import okhttp3.OkHttpClient
 import org.altbeacon.beacon.Beacon
-import org.altbeacon.beacon.Region
 import retrofit2.http.Body
 
 data class EventPayload (
@@ -37,17 +35,39 @@ data class EventResponse (
 )
 
 interface EventsApi {
-    @POST("/v2/events")
+    @POST("/functions/v1/ble-events-collector")
     suspend fun sendEvent(@Body eventPayload: EventPayload): Response<EventResponse>
+}
+
+class AuthorizationInterceptor(private val token: String) : Interceptor {
+    override fun intercept(chain: Interceptor.Chain): okhttp3.Response {
+        val request = chain.request().newBuilder()
+            .addHeader("Authorization", "Bearer $token")
+            .build()
+        return chain.proceed(request)
+    }
 }
 
 
 object RetrofitHelper {
 
-    val baseUrl = "https://4214-2401-4900-1f29-573c-43c-833e-936d-7c24.ngrok-free.app"
+    // val baseUrl = "https://f239-2401-4900-1cc5-5ff7-3801-86bb-2713-8d41.ngrok-free.app"
+    //private const val token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0"
+
+    val baseUrl = "https://nfpcjuwurkhvbogoxbtt.supabase.co"
+    private const val token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5mcGNqdXd1cmtodmJvZ294YnR0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MDg3ODM1NDEsImV4cCI6MjAyNDM1OTU0MX0.u7dYh40uQDVf_AygjJ5Y1NLqk5BVREpKpKQE1mHZGeo"
+
+    private fun getAuthorizedClient(): OkHttpClient {
+        return OkHttpClient.Builder()
+            .addInterceptor(AuthorizationInterceptor(token))
+            .build()
+    }
+
 
     fun getInstance(): Retrofit {
-        return Retrofit.Builder().baseUrl(baseUrl)
+        return Retrofit.Builder()
+            .baseUrl(baseUrl)
+            .client(getAuthorizedClient())
             .addConverterFactory(GsonConverterFactory.create())
             // we need to add converter factory to
             // convert JSON object to Java object
