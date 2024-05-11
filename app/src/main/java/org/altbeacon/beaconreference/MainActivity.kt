@@ -14,12 +14,21 @@ import org.altbeacon.beacon.Beacon
 import org.altbeacon.beacon.BeaconManager
 import org.altbeacon.beacon.MonitorNotifier
 import android.content.Intent
+import android.net.http.HttpResponseCache
+import android.net.http.HttpResponseCache.install
 import android.os.Handler
 import android.os.Looper
+//import io.github.jan.supabase.createSupabaseClient
+//import io.github.jan.supabase.postgrest.Postgrest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.altbeacon.beacon.permissions.BeaconScanPermissionsActivity
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
+import java.io.File
 import java.util.concurrent.Executors
+
+
 
 class MainActivity : AppCompatActivity() {
     lateinit var beaconListView: ListView
@@ -34,7 +43,9 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
         beaconReferenceApplication = application as BeaconReferenceApplication
 
-        // Set up a Live Data observer for beacon data
+
+
+    // Set up a Live Data observer for beacon data
         val regionViewModel = BeaconManager.getInstanceForApplication(this).getRegionViewModel(beaconReferenceApplication.region)
         // observer will be called each time the monitored regionState changes (inside vs. outside region)
         regionViewModel.regionState.observe(this, monitoringObserver)
@@ -50,6 +61,7 @@ class MainActivity : AppCompatActivity() {
 //        printAdId()
     }
 
+
     fun printAdId() {
         val executor = Executors.newSingleThreadExecutor()
         val handler = Handler(Looper.getMainLooper())
@@ -62,6 +74,8 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
+
+
 
     override fun onPause() {
         Log.d(TAG, "onPause")
@@ -109,6 +123,7 @@ class MainActivity : AppCompatActivity() {
         }
         else {
             beaconCountTextView.text = "Inside the beacon region."
+
         }
         Log.d(TAG, "monitoring state changed to : $stateString")
         val builder =
@@ -123,13 +138,19 @@ class MainActivity : AppCompatActivity() {
 
     val rangingObserver = Observer<Collection<Beacon>> { beacons ->
         Log.d(TAG, "Ranged: ${beacons.count()} beacons")
+
+
         if (BeaconManager.getInstanceForApplication(this).rangedRegions.size > 0) {
             beaconCountTextView.text = "Ranging enabled: ${beacons.count()} beacon(s) detected"
             beaconListView.adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1,
                 beacons
                     .sortedBy { it.distance }
                     .map { "${it.id1}\nid2: ${it.id2} id3:  rssi: ${it.rssi}\nest. distance: ${it.distance} m" }.toTypedArray())
+
+
         }
+
+
     }
 
     fun rangingButtonTapped(view: View) {
