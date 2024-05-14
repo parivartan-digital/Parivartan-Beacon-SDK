@@ -143,7 +143,9 @@ class BeaconReferenceApplication: Application() {
     }
 
     val MAX_BEACONS = 20
-    val EXPIRATION_TIME = 15 * 60 * 1000 // 15 minutes in milliseconds
+//    val EXPIRATION_TIME = 15 * 60 * 1000 // 15 minutes in milliseconds
+    val EXPIRATION_TIME = 5 * 1000 // 5 seconds in milliseconds
+
 
     val beaconNotificationTimestamps = object : LinkedHashMap<Beacon, Long>(MAX_BEACONS, 0.75f, true) {
         override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Beacon, Long>?): Boolean {
