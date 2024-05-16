@@ -33,8 +33,7 @@ import java.util.concurrent.Executors
 class MainActivity : AppCompatActivity() {
     lateinit var beaconListView: ListView
     lateinit var beaconCountTextView: TextView
-    lateinit var monitoringButton: Button
-    lateinit var rangingButton: Button
+
     lateinit var beaconReferenceApplication: BeaconReferenceApplication
     var alertDialog: AlertDialog? = null
 
@@ -51,8 +50,7 @@ class MainActivity : AppCompatActivity() {
         regionViewModel.regionState.observe(this, monitoringObserver)
         // observer will be called each time a new list of beacons is ranged (typically ~1 second in the foreground)
         regionViewModel.rangedBeacons.observe(this, rangingObserver)
-        rangingButton = findViewById<Button>(R.id.rangingButton)
-        monitoringButton = findViewById<Button>(R.id.monitoringButton)
+
         beaconListView = findViewById<ListView>(R.id.beaconList)
         beaconCountTextView = findViewById<TextView>(R.id.beaconCount)
         beaconCountTextView.text = "No beacons detected"
@@ -76,39 +74,6 @@ class MainActivity : AppCompatActivity() {
     }
 
 
-
-    override fun onPause() {
-        Log.d(TAG, "onPause")
-        super.onPause()
-    }
-    override fun onResume() {
-        Log.d(TAG, "onResume")
-        super.onResume()
-        // You MUST make sure the following dynamic permissions are granted by the user to detect beacons
-        //
-        //    Manifest.permission.BLUETOOTH_SCAN
-        //    Manifest.permission.BLUETOOTH_CONNECT
-        //    Manifest.permission.ACCESS_FINE_LOCATION
-        //    Manifest.permission.ACCESS_BACKGROUND_LOCATION // only needed to detect in background
-        //
-        // The code needed to get these permissions has become increasingly complex, so it is in
-        // its own file so as not to clutter this file focussed on how to use the library.
-
-        if (!BeaconScanPermissionsActivity.allPermissionsGranted(this,
-                true)) {
-            val intent = Intent(this, BeaconScanPermissionsActivity::class.java)
-            intent.putExtra("backgroundAccessRequested", true)
-            startActivity(intent)
-        }
-        else {
-            // All permissions are granted now.  In the case where we are configured
-            // to use a foreground service, we will not have been able to start scanning until
-            // after permissions are graned.  So we will do so here.
-            if (BeaconManager.getInstanceForApplication(this).monitoredRegions.size == 0) {
-                (application as BeaconReferenceApplication).setupBeaconScanning()
-            }
-        }
-    }
 
     val monitoringObserver = Observer<Int> { state ->
         var dialogTitle = "Beacons detected"
@@ -153,48 +118,6 @@ class MainActivity : AppCompatActivity() {
 
     }
 
-    fun rangingButtonTapped(view: View) {
-        val beaconManager = BeaconManager.getInstanceForApplication(this)
-        if (beaconManager.rangedRegions.size == 0) {
-            beaconManager.startRangingBeacons(beaconReferenceApplication.region)
-            rangingButton.text = "Stop Ranging"
-            beaconCountTextView.text = "Ranging enabled -- awaiting first callback"
-        }
-        else {
-            beaconManager.stopRangingBeacons(beaconReferenceApplication.region)
-            rangingButton.text = "Start Ranging"
-            beaconCountTextView.text = "Ranging disabled -- no beacons detected"
-            beaconListView.adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, arrayOf("--"))
-        }
-    }
-
-    fun monitoringButtonTapped(view: View) {
-        var dialogTitle = ""
-        var dialogMessage = ""
-        val beaconManager = BeaconManager.getInstanceForApplication(this)
-        if (beaconManager.monitoredRegions.size == 0) {
-            beaconManager.startMonitoring(beaconReferenceApplication.region)
-            dialogTitle = "Beacon monitoring started."
-            dialogMessage = "You will see a dialog if a beacon is detected, and another if beacons then stop being detected."
-            monitoringButton.text = "Stop Monitoring"
-
-        }
-        else {
-            beaconManager.stopMonitoring(beaconReferenceApplication.region)
-            dialogTitle = "Beacon monitoring stopped."
-            dialogMessage = "You will no longer see dialogs when beacons start/stop being detected."
-            monitoringButton.text = "Start Monitoring"
-        }
-        val builder =
-            AlertDialog.Builder(this)
-        builder.setTitle(dialogTitle)
-        builder.setMessage(dialogMessage)
-        builder.setPositiveButton(android.R.string.ok, null)
-        alertDialog?.dismiss()
-        alertDialog = builder.create()
-        alertDialog?.show()
-
-    }
 
     companion object {
         val TAG = "MainActivity"

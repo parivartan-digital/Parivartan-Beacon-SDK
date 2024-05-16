@@ -28,22 +28,6 @@ class BeaconReferenceApplication: Application() {
 
         BeaconManager.setDebug(false)
 
-        // By default the AndroidBeaconLibrary will only find AltBeacons.  If you wish to make it
-        // find a different type of beacon, you must specify the byte layout for that beacon's
-        // advertisement with a line like below.  The example shows how to find a beacon with the
-        // same byte layout as AltBeacon but with a beaconTypeCode of 0xaabb.  To find the proper
-        // layout expression for other beacon types, do a web search for "setBeaconLayout"
-        // including the quotes.
-        //
-        //beaconManager.getBeaconParsers().clear();
-        //beaconManager.getBeaconParsers().add(new BeaconParser().
-        //        setBeaconLayout("m:0-1=4c00,i:2-24v,p:24-24"));
-
-
-        // By default the AndroidBeaconLibrary will only find AltBeacons.  If you wish to make it
-        // find a different type of beacon like Eddystone or iBeacon, you must specify the byte layout
-        // for that beacon's advertisement with a line like below.
-        //
         // If you don't care about AltBeacon, you can clear it from the defaults:
         //beaconManager.getBeaconParsers().clear()
 
@@ -92,9 +76,6 @@ class BeaconReferenceApplication: Application() {
             Log.d(TAG, "Not setting up foreground service scanning until location permission granted by user")
             return
         }
-        //beaconManager.setEnableScheduledScanJobs(false);
-        //beaconManager.setBackgroundBetweenScanPeriod(0);
-        //beaconManager.setBackgroundScanPeriod(1100);
 
         // Ranging callbacks will drop out if no beacons are detected
         // Monitoring callbacks will be delayed by up to 25 minutes on region exit
@@ -106,7 +87,7 @@ class BeaconReferenceApplication: Application() {
         // These two lines set up a Live Data observer so this Activity can get beacon data from the Application class
         val regionViewModel = BeaconManager.getInstanceForApplication(this).getRegionViewModel(region)
         // observer will be called each time the monitored regionState changes (inside vs. outside region)
-        regionViewModel.regionState.observeForever( centralMonitoringObserver)
+//        regionViewModel.regionState.observeForever( centralMonitoringObserver)
         // observer will be called each time a new list of beacons is ranged (typically ~1 second in the foreground)
         regionViewModel.rangedBeacons.observeForever( centralRangingObserver)
     }
@@ -114,7 +95,7 @@ class BeaconReferenceApplication: Application() {
     fun setupForegroundService() {
         val builder = Notification.Builder(this, "BeaconReferenceApp")
         builder.setSmallIcon(R.drawable.ic_launcher_background)
-        builder.setContentTitle("Scanning for Beacons")
+
         val intent = Intent(this, MainActivity::class.java)
         val pendingIntent = PendingIntent.getActivity(
                 this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT + PendingIntent.FLAG_IMMUTABLE
@@ -132,15 +113,6 @@ class BeaconReferenceApplication: Application() {
         Log.d(TAG, "Back from  enableForegroundServiceScanning")
     }
 
-    val centralMonitoringObserver = Observer<Int> { state ->
-        if (state == MonitorNotifier.OUTSIDE) {
-            Log.d(TAG, "outside beacon region: "+region)
-        }
-        else {
-            Log.d(TAG, "inside beacon region: "+region)
-            sendNotification()
-        }
-    }
 
     val MAX_BEACONS = 20
 //    val EXPIRATION_TIME = 15 * 60 * 1000 // 15 minutes in milliseconds
@@ -194,27 +166,43 @@ class BeaconReferenceApplication: Application() {
         }
     }
 
-    private fun sendNotification() {
-        val builder = NotificationCompat.Builder(this, "beacon-ref-notification-id")
-            .setContentTitle("Beacon Reference Application")
-            .setContentText("A beacon is nearby.")
-            .setSmallIcon(R.drawable.ic_launcher_background)
-        val stackBuilder = TaskStackBuilder.create(this)
-        stackBuilder.addNextIntent(Intent(this, MainActivity::class.java))
-        val resultPendingIntent = stackBuilder.getPendingIntent(
-            0,
-            PendingIntent.FLAG_UPDATE_CURRENT + PendingIntent.FLAG_IMMUTABLE
-        )
-        builder.setContentIntent(resultPendingIntent)
-        val channel =  NotificationChannel("beacon-ref-notification-id",
-            "My Notification Name", NotificationManager.IMPORTANCE_DEFAULT)
-        channel.setDescription("My Notification Channel Description")
-        val notificationManager =  getSystemService(
-            Context.NOTIFICATION_SERVICE) as NotificationManager
-        notificationManager.createNotificationChannel(channel);
-        builder.setChannelId(channel.getId());
-        notificationManager.notify(1, builder.build())
+    // Define a NotificationHandler interface
+    interface NotificationHandler {
+        fun sendNotification(context: Context, title: String, message: String)
     }
+
+    // Implement the interface in your SDK class
+    class MySDK : NotificationHandler {
+        // Implement the sendNotification method
+        override fun sendNotification(context: Context, title: String, message: String) {
+            val builder = NotificationCompat.Builder(context, "beacon-ref-notification-id")
+                .setContentTitle(title)
+                .setContentText(message)
+                .setSmallIcon(R.drawable.ic_launcher_background)
+
+            val stackBuilder = TaskStackBuilder.create(context)
+            stackBuilder.addNextIntent(Intent(context, MainActivity::class.java))
+            val resultPendingIntent = stackBuilder.getPendingIntent(
+                0,
+                PendingIntent.FLAG_UPDATE_CURRENT + PendingIntent.FLAG_IMMUTABLE
+            )
+            builder.setContentIntent(resultPendingIntent)
+
+            val channel =  NotificationChannel(
+                "beacon-ref-notification-id",
+                "My Notification Name",
+                NotificationManager.IMPORTANCE_DEFAULT
+            )
+            channel.description = "My Notification Channel Description"
+
+            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.createNotificationChannel(channel)
+            builder.setChannelId(channel.id)
+            notificationManager.notify(1, builder.build())
+        }
+    }
+
+
 
     companion object {
         val TAG = "BeaconReference"

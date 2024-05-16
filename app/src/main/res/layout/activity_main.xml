@@ -24,22 +24,7 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:layout_weight="0">
-        <Button
-            android:id="@+id/rangingButton"
-            android:onClick="rangingButtonTapped"
-            android:text="Disable Ranging"
-            android:layout_width="0dp"
-            android:layout_height="50dp"
-            android:layout_weight="1">
-        </Button>
-        <Button
-            android:id="@+id/monitoringButton"
-            android:text="Disable Monitoring"
-            android:onClick="monitoringButtonTapped"
-            android:layout_width="0dp"
-            android:layout_height="50dp"
-            android:layout_weight="1">
-        </Button>
+
     </LinearLayout>
 
 </LinearLayout>
