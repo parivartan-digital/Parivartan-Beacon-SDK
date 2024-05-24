@@ -1,3 +1,4 @@
 include ':app'
 //include ':android-beacon-library:lib'
 rootProject.name = "BeaconReference"
+include ':parivartan-beacon'

@@ -11,12 +11,7 @@ import androidx.lifecycle.Observer
 import org.altbeacon.beacon.Beacon
 import org.altbeacon.beacon.BeaconManager
 import org.altbeacon.beacon.MonitorNotifier
-import android.os.Handler
-import android.os.Looper
 import digital.parivartan.beacon.EventNotifier
-//import io.github.jan.supabase.createSupabaseClient
-//import io.github.jan.supabase.postgrest.Postgrest
-import java.util.concurrent.Executors
 
 
 
